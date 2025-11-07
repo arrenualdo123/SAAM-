@@ -38,13 +38,39 @@ export class StorageService {
             return true;
         });
     }
-    static async getSessionById(id: string): Promise<TremorSession | null> {|
+    static async getSessionById(id: string): Promise<TremorSession | null> {
         const sessions = await this.getAllSessions();
         return sessions.find(s => s.id === id) || null;
     }
     static async deleteSession(id: string): Promise<void> {
         const sessions = await this.getAllSessions();
         const filtered = sessions.filter(s => s.id !== id);
-
+        await AsyncStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(filtered));
+    }
+    static async clearAllSessions(): Promise<void>{
+        await AsyncStorage.removeItem(STORAGE_KEYS.SESSIONS);
+    }
+    static async saveCurrentSession(session: Partial<TremorSession>): Promise<void> {
+    await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_SESSION, JSON.stringify(session));
+    }
+    static async getCurrentSession(): Promise<Partial<TremorSession> | null> {
+        const data = await AsyncStorage.getItem(STORAGE_KEYS.CURRENT_SESSION);
+        return data ? JSON.parse(data) : null;
+    }
+    static async clearCurrentSession(): Promise<void> {
+        await AsyncStorage.removeItem(STORAGE_KEYS.CURRENT_SESSION);
+    }
+    static async exportToJSON(): Promise<string>{
+        const sessions = await this.getAllSessions();
+        return JSON.stringify(sessions, null, 2);
+    }
+    static async importFromJSON(jsonString: string): Promise<void>{
+        try {
+            const sessions = JSON.parse(jsonString) as TremorSession[];
+            await AsyncStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions));
+        } catch (error) {
+          console.error('Error al importar sesion:', error);
+          throw error;  
+        }
     }
 }

@@ -7,7 +7,7 @@ export interface SensorReading {
 }
 
 export interface TremorSession {
-    id: number;
+    id: string;
     startTime: number;
     endTime: number;
     duration: number;
