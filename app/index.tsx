@@ -10,8 +10,8 @@ import {
 import { useRouter } from 'expo-router';
 import { BACKGROUND_COLOR, TEXT_COLOR } from '../src/utils/constants';
 
-const { width, height } = Dimensions.get('window');
-const isWearOS = width < 300; // Detecta si es reloj
+const { width } = Dimensions.get('window');
+const isWearOS = width < 300;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -19,35 +19,34 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {isWearOS ? (
-        // LAYOUT PARA WEAR OS (reloj pequeño)
         <View style={styles.wearContainer}>
           <Text style={styles.wearBrainIcon}>🧠</Text>
           <Text style={styles.wearAppName}>Parkinson</Text>
           
           <TouchableOpacity
             style={styles.wearButton}
-            onPress={() => router.navigate('/dashboard')}
+            onPress={() => router.push('/dashboard')}
             activeOpacity={0.8}
           >
             <Text style={styles.wearButtonText}>Ir</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        // LAYOUT PARA TELÉFONO
         <View style={styles.phoneContainer}>
           <View style={styles.logoContainer}>
             <View style={styles.logoBox}>
               <Text style={styles.brainIcon}>🧠</Text>
             </View>
             <Text style={styles.appName}>Parkinson Detector</Text>
+            <Text style={styles.subtitle}>Monitoreo de tremor en tiempo real</Text>
           </View>
 
           <TouchableOpacity
             style={styles.startButton}
-            onPress={() => router.navigate('/dashboard')}
+            onPress={() => router.push('/dashboard')}
             activeOpacity={0.8}
           >
-            <Text style={styles.startButtonText}>Ir a Dashboard</Text>
+            <Text style={styles.startButtonText}>Comenzar</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -60,8 +59,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BACKGROUND_COLOR,
   },
-
-  // WEAR OS STYLES
   wearContainer: {
     flex: 1,
     justifyContent: 'space-around',
@@ -91,8 +88,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-
-  // PHONE STYLES
   phoneContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -101,7 +96,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 60,
   },
   logoBox: {
     width: 140,
@@ -121,21 +116,31 @@ const styles = StyleSheet.create({
     fontSize: 70,
   },
   appName: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: 'bold',
     color: TEXT_COLOR,
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: TEXT_COLOR,
+    opacity: 0.8,
+    textAlign: 'center',
   },
   startButton: {
     backgroundColor: TEXT_COLOR,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
+    paddingVertical: 16,
+    paddingHorizontal: 50,
     borderRadius: 25,
-    marginTop: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
   },
   startButtonText: {
     color: BACKGROUND_COLOR,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });

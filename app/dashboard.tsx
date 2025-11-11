@@ -1,395 +1,482 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  Dimensions,
   ScrollView,
-  Alert,
+  Dimensions,
+  StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { BACKGROUND_COLOR, TEXT_COLOR, CARD_COLOR } from '../src/utils/constants';
-import { useTremorSession } from '../src/hooks/useTremorSession';
 
 const { width } = Dimensions.get('window');
 const isWearOS = width < 300;
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const [time, setTime] = useState('12:50');
-  const [activeTab, setActiveTab] = useState(0);
-  
-  // ✅ Usar el hook personalizado
-  const {
-    isActive,
-    sessionData,
-    tremorIndex,
-    startSession,
-    stopSession,
-    addReading,
-  } = useTremorSession();
+  const [time, setTime] = useState(new Date());
 
-  // Actualizar tiempo cada segundo
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      setTime(`${hours}:${minutes}`);
-
-      // ✅ Simular datos de sensores (reemplazar con sensores reales)
-      if (isActive) {
-        const x = (Math.random() - 0.5) * 2;
-        const y = (Math.random() - 0.5) * 2;
-        const z = (Math.random() - 0.5) * 2;
-        addReading(x, y, z);
-      }
-    }, 1000);
-
+    const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
-  }, [isActive]);
+  }, []);
 
-  const [hour, minute] = time.split(':');
-
-  const getTremorColor = () => {
-    if (tremorIndex > 66) return '#ff6b6b';
-    if (tremorIndex > 33) return '#ffd93d';
-    return '#6bcf7f';
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
   };
 
-  const getTremorStatus = () => {
-    if (tremorIndex > 66) return 'Alto';
-    if (tremorIndex > 33) return 'Moderado';
-    return 'Bajo';
-  };
-
-  // ✅ Manejar inicio de sesión
-  const handleStartSession = () => {
-    startSession();
-    Alert.alert('✅ Sesión iniciada', 'Monitoreando tremor...');
-  };
-
-  // ✅ Manejar fin de sesión
-  const handleStopSession = async () => {
-    Alert.alert(
-      '💾 Guardar Sesión',
-      '¿Deseas guardar esta sesión?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Guardar',
-          onPress: async () => {
-            const session = await stopSession();
-            if (session) {
-              Alert.alert(
-                '✅ Sesión Guardada',
-                `Índice: ${session.tremorIndex}% (${session.tremorStatus})\nDuración: ${Math.floor(session.duration / 60)}:${String(session.duration % 60).padStart(2, '0')}`,
-                [
-                  {
-                    text: 'Ver Historial',
-                    onPress: () => router.push('/history'),
-                  },
-                  {
-                    text: 'OK',
-                  },
-                ]
-              );
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const getDotStyle = (index: number) => {
-    const baseStyle = styles.wearDot;
-    if (activeTab === index) {
-      return [baseStyle, styles.wearDotActive];
-    }
-    return [baseStyle, styles.wearDotInactive];
-  };
-
-  // ========== INTERFAZ WEAR OS ==========
   if (isWearOS) {
     return (
       <SafeAreaView style={styles.wearContainer}>
-        {activeTab === 0 && (
-          <View style={styles.wearMetricsView}>
-            <Text style={styles.wearTime}>{hour}:{minute}</Text>
-            
-            <View style={styles.wearTremorBox}>
-              <Text style={styles.wearTremorLabel}>Tremor</Text>
-              <Text style={styles.wearTremorValue}>{tremorIndex}%</Text>
-              <View style={styles.wearProgressBar}>
-                <View
-                  style={[
-                    styles.wearProgressFill,
-                    { width: `${tremorIndex}%`, backgroundColor: getTremorColor() },
-                  ]}
-                />
-              </View>
-            </View>
+        <Text style={styles.wearTitle}>Menú</Text>
+        <ScrollView style={styles.wearScroll} showsVerticalScrollIndicator={false}>
+          <TouchableOpacity
+            style={styles.wearMenuItem}
+            onPress={() => router.push('/connect')}
+          >
+            <MaterialCommunityIcons name="bluetooth" size={20} color={TEXT_COLOR} />
+            <Text style={styles.wearMenuText}>Conectar</Text>
+          </TouchableOpacity>
 
-            {/* ✅ Botón de control de sesión */}
-            <TouchableOpacity
-              style={[
-                styles.wearSessionButton,
-                isActive && styles.wearSessionButtonActive,
-              ]}
-              onPress={isActive ? handleStopSession : handleStartSession}
-            >
-              <Text style={styles.wearSessionButtonText}>
-                {isActive ? '⏹️ Detener' : '▶️ Iniciar'}
-              </Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.wearMenuItem}
+            onPress={() => router.push('/sensors')}
+          >
+            <MaterialCommunityIcons name="chart-line" size={20} color={TEXT_COLOR} />
+            <Text style={styles.wearMenuText}>Sensores</Text>
+          </TouchableOpacity>
 
-            <View style={styles.wearTabIndicators}>
-              <TouchableOpacity style={getDotStyle(0)} onPress={() => setActiveTab(0)} />
-              <TouchableOpacity style={getDotStyle(1)} onPress={() => setActiveTab(1)} />
-              <TouchableOpacity style={getDotStyle(2)} onPress={() => setActiveTab(2)} />
-            </View>
+          <TouchableOpacity
+            style={styles.wearMenuItem}
+            onPress={() => router.push('/history')}
+          >
+            <Ionicons name="document-text" size={20} color={TEXT_COLOR} />
+            <Text style={styles.wearMenuText}>Historial</Text>
+          </TouchableOpacity>
+        </ScrollView>
 
-            <TouchableOpacity style={styles.wearBackButton} onPress={() => router.back()}>
-              <Text style={styles.wearBackButtonText}>←</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {activeTab === 1 && (
-          <View style={styles.wearMetricsView}>
-            <Text style={styles.wearTabTitle}>Índice</Text>
-            <View style={styles.wearIndexCard}>
-              <Text style={styles.wearIndexValue}>{tremorIndex}%</Text>
-              <Text style={[styles.wearIndexStatus, { color: getTremorColor() }]}>
-                {getTremorStatus()}
-              </Text>
-            </View>
-            <Text style={styles.wearSmallText}>Rango: 4-6 Hz</Text>
-            <Text style={styles.wearSmallText}>
-              {isActive ? `📊 ${sessionData.length} lecturas` : 'Sesión detenida'}
-            </Text>
-            
-            <View style={styles.wearTabIndicators}>
-              <TouchableOpacity style={getDotStyle(0)} onPress={() => setActiveTab(0)} />
-              <TouchableOpacity style={getDotStyle(1)} onPress={() => setActiveTab(1)} />
-              <TouchableOpacity style={getDotStyle(2)} onPress={() => setActiveTab(2)} />
-            </View>
-
-            <TouchableOpacity style={styles.wearBackButton} onPress={() => router.back()}>
-              <Text style={styles.wearBackButtonText}>←</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {activeTab === 2 && (
-          <View style={styles.wearMetricsView}>
-            <Text style={styles.wearTabTitle}>Acciones</Text>
-            
-            <TouchableOpacity
-              style={styles.wearActionButton}
-              onPress={() => router.push('/history')}
-            >
-              <Text style={styles.wearActionButtonText}>📊</Text>
-              <Text style={styles.wearActionButtonLabel}>Historial</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.wearActionButton,
-                isActive && styles.wearActionButtonDisabled,
-              ]}
-              onPress={handleStartSession}
-              disabled={isActive}
-            >
-              <Text style={styles.wearActionButtonText}>▶️</Text>
-              <Text style={styles.wearActionButtonLabel}>
-                {isActive ? 'En sesión' : 'Nueva sesión'}
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.wearTabIndicators}>
-              <TouchableOpacity style={getDotStyle(0)} onPress={() => setActiveTab(0)} />
-              <TouchableOpacity style={getDotStyle(1)} onPress={() => setActiveTab(1)} />
-              <TouchableOpacity style={getDotStyle(2)} onPress={() => setActiveTab(2)} />
-            </View>
-
-            <TouchableOpacity style={styles.wearBackButton} onPress={() => router.back()}>
-              <Text style={styles.wearBackButtonText}>←</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <TouchableOpacity style={styles.wearBackButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={18} color={BACKGROUND_COLOR} />
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
-  // ========== INTERFAZ TELÉFONO ==========
   return (
-    <SafeAreaView style={styles.phoneContainer}>
-      <View style={styles.mainContent}>
-        <View style={styles.timeCardWrapper}>
-          <View style={styles.timeCard}>
-            <View style={styles.timeDisplay}>
-              <Text style={styles.timeHour}>{hour}</Text>
-              <Text style={styles.timeDot}>:</Text>
-              <Text style={styles.timeMinute}>{minute}</Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={BACKGROUND_COLOR} />
+      
+      {/* Header con reloj */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Hola 👋</Text>
+          <Text style={styles.subtitle}>Monitoreo de Parkinson</Text>
+        </View>
+        <View style={styles.timeContainer}>
+          <Text style={styles.timeText}>{formatTime(time)}</Text>
+          <Text style={styles.dateText}>
+            {time.toLocaleDateString('es-MX', { 
+              day: 'numeric',
+              month: 'short' 
+            })}
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView 
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Estadísticas rápidas */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <View style={[styles.iconCircle, { backgroundColor: '#6BCF7F' }]}>
+              <MaterialCommunityIcons name="run" size={24} color="white" />
             </View>
-            
-            {/* ✅ Indicador de estado */}
-            {isActive && (
-              <View style={styles.activeIndicator}>
-                <View style={styles.activeBlinkDot} />
-                <Text style={styles.activeText}>Monitoreando</Text>
-              </View>
-            )}
+            <Text style={styles.statValue}>23.5</Text>
+            <Text style={styles.statLabel}>mph</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.iconCircle, { backgroundColor: '#FFD93D' }]}>
+              <MaterialCommunityIcons name="rotate-3d-variant" size={24} color="white" />
+            </View>
+            <Text style={styles.statValue}>23.5</Text>
+            <Text style={styles.statLabel}>°/s</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.iconCircle, { backgroundColor: '#FF6B6B' }]}>
+              <MaterialCommunityIcons name="heart-pulse" size={24} color="white" />
+            </View>
+            <Text style={styles.statValue}>85</Text>
+            <Text style={styles.statLabel}>BPM</Text>
           </View>
         </View>
 
-        <View style={styles.metricsContainer}>
-          <View style={styles.metricRow}>
-            <Text style={styles.metricIcon}>📊</Text>
-            <Text style={styles.metricText}>Tremor: {tremorIndex}%</Text>
+        {/* Acción principal */}
+        <TouchableOpacity
+          style={styles.primaryCard}
+          onPress={() => router.push('/connect')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.primaryCardContent}>
+            <View style={styles.primaryCardLeft}>
+              <View style={styles.primaryIconCircle}>
+                <MaterialCommunityIcons name="bluetooth-connect" size={32} color="white" />
+              </View>
+              <View>
+                <Text style={styles.primaryCardTitle}>Conectar Smartwatch</Text>
+                <Text style={styles.primaryCardSubtitle}>
+                  Vincular dispositivo vía Bluetooth
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={TEXT_COLOR} />
           </View>
-          <View
-            style={[
-              styles.metricStatusBadge,
-              { backgroundColor: getTremorColor() },
-            ]}
+        </TouchableOpacity>
+
+        {/* Grid de opciones */}
+        <View style={styles.menuGrid}>
+          <TouchableOpacity
+            style={styles.menuCard}
+            onPress={() => router.push('/realtime')}
+            activeOpacity={0.8}
           >
-            <Text style={styles.metricStatusText}>{getTremorStatus()}</Text>
+            <View style={styles.menuCardHeader}>
+              <View style={[styles.menuIconContainer, { backgroundColor: '#E3F2FD' }]}>
+                <MaterialCommunityIcons name="pulse" size={28} color="#2196F3" />
+              </View>
+            </View>
+            <Text style={styles.menuCardTitle}>Tiempo Real</Text>
+            <Text style={styles.menuCardDescription}>
+              Monitoreo en vivo de sensores
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuCard}
+            onPress={() => router.push('/sensors')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuCardHeader}>
+              <View style={[styles.menuIconContainer, { backgroundColor: '#F3E5F5' }]}>
+                <MaterialCommunityIcons name="chart-line" size={28} color="#9C27B0" />
+              </View>
+            </View>
+            <Text style={styles.menuCardTitle}>Sensores</Text>
+            <Text style={styles.menuCardDescription}>
+              Acelerómetro y giroscopio
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuCard}
+            onPress={() => router.push('/history')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuCardHeader}>
+              <View style={[styles.menuIconContainer, { backgroundColor: '#FFF3E0' }]}>
+                <Ionicons name="document-text" size={28} color="#FF9800" />
+              </View>
+            </View>
+            <Text style={styles.menuCardTitle}>Historial</Text>
+            <Text style={styles.menuCardDescription}>
+              Sesiones guardadas y PDFs
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuCard}
+            onPress={() => router.push('/connect')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuCardHeader}>
+              <View style={[styles.menuIconContainer, { backgroundColor: '#E8F5E9' }]}>
+                <MaterialCommunityIcons name="cog" size={28} color="#4CAF50" />
+              </View>
+            </View>
+            <Text style={styles.menuCardTitle}>Configuración</Text>
+            <Text style={styles.menuCardDescription}>
+              Ajustes de la aplicación
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Info card */}
+        <View style={styles.infoCard}>
+          <View style={styles.infoIconContainer}>
+            <MaterialCommunityIcons name="information" size={20} color="#2196F3" />
           </View>
-          <View style={styles.metricRow}>
-            <Text style={styles.metricIcon}>⏱️</Text>
-            <Text style={styles.metricText}>
-              {isActive ? `${sessionData.length} lecturas` : 'Detenido'}
+          <View style={styles.infoContent}>
+            <Text style={styles.infoTitle}>¿Necesitas ayuda?</Text>
+            <Text style={styles.infoText}>
+              Consulta la guía de uso o contacta con soporte
             </Text>
           </View>
-          <View style={styles.metricRow}>
-            <Text style={styles.metricIcon}>🎯</Text>
-            <Text style={styles.metricText}>Rango: 4-6 Hz</Text>
-          </View>
         </View>
-      </View>
+      </ScrollView>
 
-      <View style={styles.phoneActions}>
-        {!isActive ? (
-          <TouchableOpacity style={styles.startButton} onPress={handleStartSession}>
-            <Text style={styles.startButtonText}>▶️ Iniciar Sesión</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.stopButton} onPress={handleStopSession}>
-            <Text style={styles.stopButtonText}>⏹️ Detener y Guardar</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={styles.historyButton}
-          onPress={() => router.push('/history')}
-        >
-          <Text style={styles.historyButtonText}>📊 Ver Historial</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>← Volver</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Botón flotante */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/realtime')}
+        activeOpacity={0.9}
+      >
+        <MaterialCommunityIcons name="play" size={28} color="white" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  // ========== WEAR OS STYLES ==========
-  wearContainer: { flex: 1, backgroundColor: BACKGROUND_COLOR },
-  wearMetricsView: {
+  container: {
     flex: 1,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    padding: 12,
+    backgroundColor: BACKGROUND_COLOR,
   },
-  wearTime: {
-    fontSize: 40,
-    fontWeight: '300',
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 24,
+    paddingTop: 16,
+  },
+  greeting: {
+    fontSize: 28,
+    fontWeight: '700',
     color: TEXT_COLOR,
-    letterSpacing: -1,
+    marginBottom: 4,
   },
-  wearTabTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  subtitle: {
+    fontSize: 14,
     color: TEXT_COLOR,
-    marginBottom: 10,
+    opacity: 0.7,
   },
-  wearTremorBox: { alignItems: 'center', marginVertical: 10 },
-  wearTremorLabel: { fontSize: 12, color: TEXT_COLOR, opacity: 0.7 },
-  wearTremorValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
+  timeContainer: {
+    alignItems: 'flex-end',
+  },
+  timeText: {
+    fontSize: 24,
+    fontWeight: '600',
     color: TEXT_COLOR,
-    marginVertical: 5,
   },
-  wearProgressBar: {
-    width: 80,
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  wearProgressFill: { height: '100%', borderRadius: 3 },
-  wearSessionButton: {
-    backgroundColor: TEXT_COLOR,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  wearSessionButtonActive: {
-    backgroundColor: '#ff6b6b',
-  },
-  wearSessionButtonText: {
-    color: BACKGROUND_COLOR,
+  dateText: {
     fontSize: 12,
-    fontWeight: 'bold',
+    color: TEXT_COLOR,
+    opacity: 0.7,
+    marginTop: 2,
   },
-  wearIndexCard: {
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 100,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: CARD_COLOR,
+    padding: 16,
+    borderRadius: 16,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 15,
-    borderRadius: 12,
-    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  wearIndexValue: { fontSize: 36, fontWeight: 'bold', color: TEXT_COLOR },
-  wearIndexStatus: { fontSize: 14, fontWeight: '600', marginTop: 5 },
-  wearSmallText: {
-    fontSize: 11,
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: TEXT_COLOR,
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 12,
     color: TEXT_COLOR,
     opacity: 0.6,
-    marginTop: 4,
   },
-  wearActionButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 12,
-    borderRadius: 12,
+  primaryCard: {
+    backgroundColor: CARD_COLOR,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  primaryCardContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 100,
+    justifyContent: 'space-between',
   },
-  wearActionButtonDisabled: {
-    opacity: 0.5,
+  primaryCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    flex: 1,
   },
-  wearActionButtonText: {
-    fontSize: 24,
+  primaryIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#6BCF7F',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  wearActionButtonLabel: {
-    fontSize: 10,
+  primaryCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: TEXT_COLOR,
-    marginTop: 4,
-    fontWeight: '600',
+    marginBottom: 4,
   },
-  wearTabIndicators: { flexDirection: 'row', gap: 6, marginVertical: 10 },
-  wearDot: { width: 6, height: 6, borderRadius: 3 },
-  wearDotActive: { backgroundColor: TEXT_COLOR },
-  wearDotInactive: { backgroundColor: 'rgba(248, 247, 244, 0.3)' },
+  primaryCardSubtitle: {
+    fontSize: 13,
+    color: TEXT_COLOR,
+    opacity: 0.7,
+  },
+  menuGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  menuCard: {
+    width: (width - 60) / 2,
+    backgroundColor: CARD_COLOR,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  menuCardHeader: {
+    marginBottom: 12,
+  },
+  menuIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: TEXT_COLOR,
+    marginBottom: 4,
+  },
+  menuCardDescription: {
+    fontSize: 12,
+    color: TEXT_COLOR,
+    opacity: 0.6,
+    lineHeight: 16,
+  },
+  infoCard: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    gap: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196F3',
+  },
+  infoIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: TEXT_COLOR,
+    marginBottom: 4,
+  },
+  infoText: {
+    fontSize: 12,
+    color: TEXT_COLOR,
+    opacity: 0.7,
+    lineHeight: 16,
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#6BCF7F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  // WearOS
+  wearContainer: {
+    flex: 1,
+    backgroundColor: BACKGROUND_COLOR,
+    padding: 15,
+    justifyContent: 'space-between',
+  },
+  wearTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: TEXT_COLOR,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  wearScroll: {
+    flex: 1,
+  },
+  wearMenuItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  wearMenuText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: TEXT_COLOR,
+  },
   wearBackButton: {
     backgroundColor: TEXT_COLOR,
     width: 38,
@@ -397,153 +484,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  wearBackButtonText: {
-    color: BACKGROUND_COLOR,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  // ========== PHONE STYLES ==========
-  phoneContainer: {
-    flex: 1,
-    backgroundColor: BACKGROUND_COLOR,
-    padding: 20,
-    justifyContent: 'space-between',
-  },
-  mainContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    gap: 30,
-    paddingTop: 60,
-  },
-  timeCardWrapper: { justifyContent: 'center' },
-  timeCard: {
-    backgroundColor: CARD_COLOR,
-    borderRadius: 24,
-    padding: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    minWidth: 200,
-  },
-  timeDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timeHour: {
-    fontSize: 72,
-    fontWeight: '300',
-    color: TEXT_COLOR,
-    letterSpacing: -2,
-    lineHeight: 80,
-  },
-  timeDot: {
-    fontSize: 60,
-    color: TEXT_COLOR,
-    fontWeight: '300',
-    paddingHorizontal: 5,
-    lineHeight: 80,
-  },
-  timeMinute: {
-    fontSize: 72,
-    fontWeight: '300',
-    color: TEXT_COLOR,
-    letterSpacing: -2,
-    lineHeight: 80,
-  },
-  activeIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 15,
-    gap: 8,
-  },
-  activeBlinkDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ff6b6b',
-  },
-  activeText: {
-    color: TEXT_COLOR,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  metricsContainer: { gap: 20, paddingTop: 10 },
-  metricRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  metricIcon: { fontSize: 20, width: 24, textAlign: 'center' },
-  metricText: {
-    color: TEXT_COLOR,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0.3,
-  },
-  metricStatusBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  metricStatusText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  phoneActions: {
-    gap: 12,
-  },
-  startButton: {
-    backgroundColor: '#6bcf7f',
-    paddingVertical: 16,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  startButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  stopButton: {
-    backgroundColor: '#ff6b6b',
-    paddingVertical: 16,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  stopButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  historyButton: {
-    backgroundColor: CARD_COLOR,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  historyButtonText: {
-    color: TEXT_COLOR,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  backButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: TEXT_COLOR,
-    fontSize: 14,
-    fontWeight: '600',
+    alignSelf: 'center',
+    marginTop: 10,
   },
 });

@@ -13,18 +13,12 @@ export default function RootLayout() {
           },
         }}
       >
-        <Stack.Screen 
-          name="index"
-          options={{
-            title: 'Home',
-          }}
-        />
-        <Stack.Screen 
-          name="dashboard"
-          options={{
-            title: 'Dashboard',
-          }}
-        />
+        <Stack.Screen name="index" />
+        <Stack.Screen name="dashboard" />
+        <Stack.Screen name="connect" />
+        <Stack.Screen name="realtime" />
+        <Stack.Screen name="sensors" />
+        <Stack.Screen name="history" />
       </Stack>
     </GestureHandlerRootView>
   );
