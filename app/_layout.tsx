@@ -19,6 +19,7 @@ export default function RootLayout() {
         <Stack.Screen name="realtime" />
         <Stack.Screen name="sensors" />
         <Stack.Screen name="history" />
+        <Stack.Screen name="settings" options={{ title: 'Configuración' }} />
       </Stack>
     </GestureHandlerRootView>
   );

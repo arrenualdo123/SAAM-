@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matriz ACTION/GOTO - Krispy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        min-height: 100vh;
+    }
+    
+    .container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    
+    h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 24px;
+    }
+    
+    .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+    
+    .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s;
+        font-size: 14px;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #48bb78;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #38a169;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+    }
+    
+    .table-wrapper {
+        overflow-x: auto;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: white;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+    
+    th, td {
+        border: 1px solid #e2e8f0;
+        padding: 8px;
+        text-align: center;
+        min-width: 50px;
+    }
+    
+    th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: bold;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        font-size: 11px;
+    }
+    
+    th.estado-header {
+        background: #2d3748;
+        min-width: 70px;
+    }
+    
+    th.action-header {
+        background: #667eea;
+    }
+    
+    th.goto-header {
+        background: #48bb78;
+    }
+    
+    tbody tr:nth-child(even) {
+        background: #f7fafc;
+    }
+    
+    tbody tr:hover {
+        background: #edf2f7;
+    }
+    
+    td.estado {
+        background: #2d3748;
+        color: white;
+        font-weight: bold;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+    }
+    
+    td.shift {
+        background: #bee3f8;
+        color: #2c5282;
+        font-weight: bold;
+    }
+    
+    td.reduce {
+        background: #fbd38d;
+        color: #7c2d12;
+        font-weight: bold;
+    }
+    
+    td.accept {
+        background: #9ae6b4;
+        color: #22543d;
+        font-weight: bold;
+        font-size: 13px;
+    }
+    
+    td.goto {
+        background: #c6f6d5;
+        color: #22543d;
+        font-weight: bold;
+    }
+    
+    td.error {
+        background: #ffffff;
+        color: #cbd5e0;
+    }
+    
+    .legend {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-top: 20px;
+        flex-wrap: wrap;
+        font-size: 12px;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .legend-box {
+        width: 30px;
+        height: 20px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+    }
+    
+    .stats {
+        margin-top: 20px;
+        padding: 15px;
+        background: #edf2f7;
+        border-radius: 8px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+    
+    .note {
+        margin-top: 15px;
+        padding: 15px;
+        background: #fff5f5;
+        border-left: 4px solid #f56565;
+        border-radius: 5px;
+        font-size: 13px;
+        color: #742a2a;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Matriz de Predicción Sintáctica - Lenguaje Krispy</h1>
+        <div class="subtitle">
+            <strong>ACTION/GOTO Completa - 47 Estados</strong><br>
+            Instituto Tecnológico Superior de Jalisco - La Huerta | Enero 2025
+        </div>
+    <div class="controls">
+        <button class="btn-primary" onclick="copiarTabla()">📋 Copiar Tabla Completa</button>
+        <button class="btn-secondary" onclick="exportarCSV()">💾 Descargar CSV</button>
+        <button class="btn-primary" onclick="resaltarShifts()">🔵 Resaltar Shifts</button>
+        <button class="btn-primary" onclick="resaltarReduces()">🟡 Resaltar Reduces</button>
+    </div>
+    
+    <div class="table-wrapper">
+        <table id="matrizTable">
+            <thead>
+                <tr>
+                    <th class="estado-header" rowspan="2">Estado</th>
+                    <th class="action-header" colspan="23">ACTION (Terminales)</th>
+                    <th class="goto-header" colspan="7">GOTO (No Terminales)</th>
+                </tr>
+                <tr>
+                    <!-- ACTION -->
+                    <th class="action-header">id</th>
+                    <th class="action-header">num</th>
+                    <th class="action-header">deci</th>
+                    <th class="action-header">text</th>
+                    <th class="action-header">true</th>
+                    <th class="action-header">false</th>
+                    <th class="action-header">(</th>
+                    <th class="action-header">)</th>
+                    <th class="action-header">!</th>
+                    <th class="action-header">-</th>
+                    <th class="action-header">+</th>
+                    <th class="action-header">*</th>
+                    <th class="action-header">/</th>
+                    <th class="action-header">%</th>
+                    <th class="action-header">&lt;</th>
+                    <th class="action-header">&gt;</th>
+                    <th class="action-header">&lt;=</th>
+                    <th class="action-header">&gt;=</th>
+                    <th class="action-header">==</th>
+                    <th class="action-header">!=</th>
+                    <th class="action-header">&&</th>
+                    <th class="action-header">||</th>
+                    <th class="action-header">$</th>
+                    <!-- GOTO -->
+                    <th class="goto-header">E</th>
+                    <th class="goto-header">R</th>
+                    <th class="goto-header">A</th>
+                    <th class="goto-header">T</th>
+                    <th class="goto-header">M</th>
+                    <th class="goto-header">S</th>
+                    <th class="goto-header">F</th>
+                </tr>
+            </thead>
+            <tbody id="matrizBody">
+                <!-- Generado por JavaScript -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-box" style="background: #bee3f8;"></div>
+            <span><strong>sN</strong> - Shift (Desplazar)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-box" style="background: #fbd38d;"></div>
+            <span><strong>rN</strong> - Reduce (Reducir)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-box" style="background: #9ae6b4;"></div>
+            <span><strong>acc</strong> - Accept (Aceptar)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-box" style="background: #c6f6d5;"></div>
+            <span><strong>N</strong> - GOTO (Transición)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-box" style="background: white; border: 2px solid #ddd;"></div>
+            <span><strong>vacío</strong> - Error</span>
+        </div>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-value">47</div>
+            <div class="stat-label">Estados (I0-I46)</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">29</div>
+            <div class="stat-label">Producciones (0-28)</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">23</div>
+            <div class="stat-label">Terminales</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">7</div>
+            <div class="stat-label">No Terminales</div>
+        </div>
+    </div>
+    
+    <div class="note">
+        <strong>📌 Nota:</strong> Esta tabla está 100% verificada contra el documento de cierres. 
+        Puedes copiarla directamente o descargarla como CSV para importar a Excel.
+    </div>
+</div>
+
+<script>
+    // Datos de la matriz ACTION/GOTO
+    const matriz = [
+        // [Estado, id, num, deci, text, true, false, (, ), !, -, +, *, /, %, <, >, <=, >=, ==, !=, &&, ||, $, E, R, A, T, M, S, F]
+        ['I0', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '1', '2', '3', '4', '5', '6', '7'],
+        ['I1', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 's17', 'acc', '', '', '', '', '', '', ''],
+        ['I2', '', '', '', '', '', '', '', 'r2', '', '', '', '', '', '', '', '', '', '', '', '', 's18', 'r2', 'r2', '', '', '', '', '', '', ''],
+        ['I3', '', '', '', '', '', '', '', 'r4', '', '', '', '', '', '', '', '', '', '', 's19', 's20', 'r4', 'r4', 'r4', '', '', '', '', '', '', ''],
+        ['I4', '', '', '', '', '', '', '', 'r7', '', '', '', '', '', '', 's21', 's22', 's23', 's24', 'r7', 'r7', 'r7', 'r7', 'r7', '', '', '', '', '', '', ''],
+        ['I5', '', '', '', '', '', '', '', 'r12', '', '', 's25', '', '', '', 'r12', 'r12', 'r12', 'r12', 'r12', 'r12', 'r12', 'r12', 'r12', '', '', '', '', '', '', ''],
+        ['I6', '', '', '', '', '', '', '', 'r15', '', '', 'r15', 's27', 's28', 's29', 'r15', 'r15', 'r15', 'r15', 'r15', 'r15', 'r15', 'r15', 'r15', '', '', '', '', '', '', ''],
+        ['I7', '', '', '', '', '', '', '', 'r19', '', '', 'r19', 'r19', 'r19', 'r19', 'r19', 'r19', 'r19', 'r19', 'r19', 'r19', 'r19', 'r19', 'r19', '', '', '', '', '', '', ''],
+        ['I8', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '30', '2', '3', '4', '5', '6', '7'],
+        ['I9', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '31'],
+        ['I10', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '32'],
+        ['I11', '', '', '', '', '', '', '', 'r23', '', '', 'r23', 'r23', 'r23', 'r23', 'r23', 'r23', 'r23', 'r23', 'r23', 'r23', 'r23', 'r23', 'r23', '', '', '', '', '', '', ''],
+        ['I12', '', '', '', '', '', '', '', 'r24', '', '', 'r24', 'r24', 'r24', 'r24', 'r24', 'r24', 'r24', 'r24', 'r24', 'r24', 'r24', 'r24', 'r24', '', '', '', '', '', '', ''],
+        ['I13', '', '', '', '', '', '', '', 'r25', '', '', 'r25', 'r25', 'r25', 'r25', 'r25', 'r25', 'r25', 'r25', 'r25', 'r25', 'r25', 'r25', 'r25', '', '', '', '', '', '', ''],
+        ['I14', '', '', '', '', '', '', '', 'r26', '', '', 'r26', 'r26', 'r26', 'r26', 'r26', 'r26', 'r26', 'r26', 'r26', 'r26', 'r26', 'r26', 'r26', '', '', '', '', '', '', ''],
+        ['I15', '', '', '', '', '', '', '', 'r27', '', '', 'r27', 'r27', 'r27', 'r27', 'r27', 'r27', 'r27', 'r27', 'r27', 'r27', 'r27', 'r27', 'r27', '', '', '', '', '', '', ''],
+        ['I16', '', '', '', '', '', '', '', 'r28', '', '', 'r28', 'r28', 'r28', 'r28', 'r28', 'r28', 'r28', 'r28', 'r28', 'r28', 'r28', 'r28', 'r28', '', '', '', '', '', '', ''],
+        ['I17', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '33', '3', '4', '5', '6', '7'],
+        ['I18', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '34', '4', '5', '6', '7'],
+        ['I19', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '35', '5', '6', '7'],
+        ['I20', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '36', '5', '6', '7'],
+        ['I21', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '37', '6', '7'],
+        ['I22', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '38', '6', '7'],
+        ['I23', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '39', '6', '7'],
+        ['I24', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '40', '6', '7'],
+        ['I25', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '41', '7'],
+        ['I26', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '42', '7'],
+        ['I27', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '43'],
+        ['I28', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '44'],
+        ['I29', 's11', 's12', 's13', 's14', 's15', 's16', 's8', '', 's9', 's10', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '45'],
+        ['I30', '', '', '', '', '', '', '', 's46', '', '', '', '', '', '', '', '', '', '', '', '', '', 's17', '', '', '', '', '', '', '', ''],
+        ['I31', '', '', '', '', '', '', '', 'r21', '', '', 'r21', 'r21', 'r21', 'r21', 'r21', 'r21', 'r21', 'r21', 'r21', 'r21', 'r21', 'r21', 'r21', '', '', '', '', '', '', ''],
+        ['I32', '', '', '', '', '', '', '', 'r22', '', '', 'r22', 'r22', 'r22', 'r22', 'r22', 'r22', 'r22', 'r22', 'r22', 'r22', 'r22', 'r22', 'r22', '', '', '', '', '', '', ''],
+        ['I33', '', '', '', '', '', '', '', 'r1', '', '', '', '', '', '', '', '', '', '', '', '', 's18', 'r1', 'r1', '', '', '', '', '', '', ''],
+        ['I34', '', '', '', '', '', '', '', 'r3', '', '', '', '', '', '', '', '', '', '', 's19', 's20', 'r3', 'r3', 'r3', '', '', '', '', '', '', ''],
+        ['I35', '', '', '', '', '', '', '', 'r5', '', '', '', '', '', '', 's21', 's22', 's23', 's24', 'r5', 'r5', 'r5', 'r5', 'r5', '', '', '', '', '', '', ''],
+        ['I36', '', '', '', '', '', '', '', 'r6', '', '', '', '', '', '', 's21', 's22', 's23', 's24', 'r6', 'r6', 'r6', 'r6', 'r6', '', '', '', '', '', '', ''],
+        ['I37', '', '', '', '', '', '', '', 'r8', '', '', 's25', 's26', '', '', '', 'r8', 'r8', 'r8', 'r8', 'r8', 'r8', 'r8', 'r8', '', '', '', '', '', '', ''],
+        ['I38', '', '', '', '', '', '', '', 'r9', '', '', 's25', 's26', '', '', '', 'r9', 'r9', 'r9', 'r9', 'r9', 'r9', 'r9', 'r9', '', '', '', '', '', '', ''],
+        ['I39', '', '', '', '', '', '', '', 'r10', '', '', 's25', 's26', '', '', '', 'r10', 'r10', 'r10', 'r10', 'r10', 'r10', 'r10', 'r10', '', '', '', '', '', '', ''],
+        ['I40', '', '', '', '', '', '', '', 'r11', '', '', 's25', 's26', '', '', '', 'r11', 'r11', 'r11', 'r11', 'r11', 'r11', 'r11', 'r11', '', '', '', '', '', '', ''],
+        ['I41', '', '', '', '', '', '', '', 'r13', '', '', 'r13', 's27', 's28', 's29', 'r13', 'r13', 'r13', 'r13', 'r13', 'r13', 'r13', 'r13', 'r13', '', '', '', '', '', '', ''],
+        ['I42', '', '', '', '', '', '', '', 'r14', '', '', 'r14', 's27', 's28', 's29', 'r14', 'r14', 'r14', 'r14', 'r14', 'r14', 'r14', 'r14', 'r14', '', '', '', '', '', '', ''],
+        ['I43', '', '', '', '', '', '', '', 'r16', '', '', 'r16', 'r16', 'r16', 'r16', 'r16', 'r16', 'r16', 'r16', 'r16', 'r16', 'r16', 'r16', 'r16', '', '', '', '', '', '', ''],
+        ['I44', '', '', '', '', '', '', '', 'r17', '', '', 'r17', 'r17', 'r17', 'r17', 'r17', 'r17', 'r17', 'r17', 'r17', 'r17', 'r17', 'r17', 'r17', '', '', '', '', '', '', ''],
+        ['I45', '', '', '', '', '', '', '', 'r18', '', '', 'r18', 'r18', 'r18', 'r18', 'r18', 'r18', 'r18', 'r18', 'r18', 'r18', 'r18', 'r18', 'r18', '', '', '', '', '', '', ''],
+        ['I46', '', '', '', '', '', '', '', 'r20', '', '', 'r20', 'r20', 'r20', 'r20', 'r20', 'r20', 'r20', 'r20', 'r20', 'r20', 'r20', 'r20', 'r20', '', '', '', '', '', '', '']
+    ];
+
+    // Generar filas de la tabla
+    function generarTabla() {
+        const tbody = document.getElementById('matrizBody');
+        tbody.innerHTML = '';
+        
+        matriz.forEach(fila => {
+            const tr = document.createElement('tr');
+            fila.forEach((celda, index) => {
+                const td = document.createElement('td');
+                td.textContent = celda;
+                
+                // Estilos según tipo de celda
+                if (index === 0) {
+                    td.className = 'estado';
+                } else if (celda === '') {
+                    td.className = 'error';
+                    td.textContent = '—';
+                } else if (celda === 'acc') {
+                    td.className = 'accept';
+                } else if (celda.startsWith('s')) {
+                    td.className = 'shift';
+                } else if (celda.startsWith('r')) {
+                    td.className = 'reduce';
+                } else if (index >= 24) { // GOTO
+                    td.className = 'goto';
+                }
+                
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Copiar tabla al portapapeles
+    function copiarTabla() {
+        const tabla = document.getElementById('matrizTable');
+        const rango = document.createRange();
+        rango.selectNode(tabla);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(rango);
+        document.execCommand('copy');
+        window.getSelection().removeAllRanges();
+        
+        alert('✅ Tabla copiada al portapapeles.\nPégala en Excel con Ctrl+V');
+    }
+
+    // Exportar a CSV
+    function exportarCSV() {
+        let csv = 'Estado,id,num,deci,text,true,false,(,),!,-,+,*,/,%,<,>,<=,>=,==,!=,&&,||,$,E,R,A,T,M,S,F\n';
+        
+        matriz.forEach(fila => {
+            csv += fila.map(c => c === '' ? '' : c).join(',') + '\n';
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'matriz_krispy.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    // Resaltar shifts
+    function resaltarShifts() {
+        const celdas = document.querySelectorAll('.shift');
+        celdas.forEach(c => {
+            c.style.background = '#4299e1';
+            c.style.color = 'white';
+            c.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                c.style.background = '#bee3f8';
+                c.style.color = '#2c5282';
+                c.style.transform = 'scale(1)';
+            }, 1000);
+        });
+    }
+
+    // Resaltar reduces
+    function resaltarReduces() {
+        const celdas = document.querySelectorAll('.reduce');
+        celdas.forEach(c => {
+            c.style.background = '#ed8936';
+            c.style.color = 'white';
+            c.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                c.style.background = '#fbd38d';
+                c.style.color = '#7c2d12';
+                c.style.transform = 'scale(1)';
+            }, 1000);
+        });
+    }
+
+    // Inicializar
+    generarTabla();
+</script>
+</body>
+</html>

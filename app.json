@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.parkinsonapp",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "La app necesita Bluetooth para conectarse al smartwatch y recibir datos de sensores.",
+        "NSBluetoothPeripheralUsageDescription": "Permite que el smartwatch envíe datos de sensores a esta aplicación."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +29,10 @@
       "permissions": [
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_ADMIN",
-        "android.permission.BLUETOOTH_CONNECT"
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -46,7 +54,14 @@
         }
       ],
       "expo-font",
-      "react-native-ble-plx"
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": ["peripheral", "central"],
+          "bluetoothAlwaysUsageDescription": "La app necesita Bluetooth para conectarse al smartwatch y recibir datos de sensores."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
