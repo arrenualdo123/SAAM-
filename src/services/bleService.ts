@@ -1,12 +1,9 @@
-// src/services/bleService.ts - VERSIÓN CON MANEJO DE ERRORES
+// src/services/bleService.ts - VERSIÓN BLACKVIEW W60
 
-import { BleManager, Device, Characteristic, State } from 'react-native-ble-plx';
+import { BleManager, Device, State } from 'react-native-ble-plx';
 import { Platform, PermissionsAndroid, Alert } from 'react-native';
 import { BLEDevice, WatchSensorPacket } from '../types';
-
-const SERVICE_UUID = '0000181a-0000-1000-8000-00805f9b34fb';
-const ACCEL_CHARACTERISTIC = '00002a6e-0000-1000-8000-00805f9b34fb';
-const GYRO_CHARACTERISTIC = '00002a6f-0000-1000-8000-00805f9b34fb';
+import { BLACKVIEW_W60_CONFIG, BlackviewW60Config } from './bleConfigBlackviewW60';
 
 export class BLEService {
   private manager: BleManager | null = null;
@@ -16,7 +13,7 @@ export class BLEService {
   constructor() {
     try {
       this.manager = new BleManager();
-      console.log('✅ BLE Manager inicializado');
+      console.log('✅ BLE Manager inicializado para Blackview W60');
     } catch (error) {
       console.warn('⚠️ BLE Manager no disponible:', error);
       this.manager = null;
@@ -31,23 +28,22 @@ export class BLEService {
   }
 
   /**
-   * Solicitar TODOS los permisos necesarios (Android 12+)
+   * Solicitar permisos para Android 12+
    */
   async requestPermissions(): Promise<boolean> {
     if (Platform.OS !== 'android') {
-      return true; // iOS maneja permisos automáticamente
+      return true;
     }
 
     try {
       if (Platform.Version >= 31) {
-        // Android 12+ (API 31+)
         const permissions = [
           PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
           PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         ];
 
-        console.log('📍 Solicitando permisos para Android 12+...');
+        console.log('🔐 Solicitando permisos para Android 12+...');
         
         const granted = await PermissionsAndroid.requestMultiple(permissions);
 
@@ -59,7 +55,7 @@ export class BLEService {
         if (!allGranted) {
           Alert.alert(
             'Permisos necesarios',
-            'La app necesita permisos de Bluetooth y Ubicación para escanear dispositivos. Por favor, actívalos en Configuración.',
+            'La app necesita permisos de Bluetooth y Ubicación. Actívalos en Configuración.',
             [{ text: 'OK' }]
           );
           return false;
@@ -68,11 +64,9 @@ export class BLEService {
         console.log('✅ Permisos otorgados');
         return true;
       } else {
-        // Android 11 o menor
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
         );
-        
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       }
     } catch (error) {
@@ -108,7 +102,7 @@ export class BLEService {
   }
 
   /**
-   * Escanear dispositivos cercanos con manejo de errores
+   * Escanear dispositivos (especialmente Blackview W60)
    */
   async scanForDevices(
     onDeviceFound: (device: BLEDevice) => void,
@@ -117,24 +111,20 @@ export class BLEService {
     const manager = this.ensureManager();
 
     try {
-      // 1. Verificar permisos
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) {
         throw new Error('Permisos de Bluetooth no otorgados');
       }
 
-      // 2. Verificar que Bluetooth esté encendido
       const isEnabled = await this.isBluetoothEnabled();
       if (!isEnabled) {
         throw new Error('Bluetooth no está habilitado');
       }
 
-      // 3. Detener escaneo previo
       manager.stopDeviceScan();
 
-      console.log('🔍 Iniciando escaneo...');
+      console.log('🔍 Iniciando escaneo de dispositivos...');
 
-      // 4. Iniciar escaneo
       return new Promise((resolve, reject) => {
         const foundDevices = new Set<string>();
 
@@ -152,17 +142,27 @@ export class BLEService {
             if (device && device.name && !foundDevices.has(device.id)) {
               foundDevices.add(device.id);
 
-              // Filtrar dispositivos relevantes
               const name = device.name.toLowerCase();
+              
+              // Buscar específicamente Blackview W60
               if (
-                name.includes('parkinson') ||
-                name.includes('watch') ||
-                name.includes('wear') ||
-                name.includes('galaxy') ||
-                name.includes('pixel')
+                name.includes('blackview') ||
+                name.includes('w60') ||
+                name.includes('glory') ||
+                device.localName?.includes('Blackview')
               ) {
-                console.log('📱 Dispositivo encontrado:', device.name);
+                console.log(`✅ ¡Encontrado! ${device.name} (${device.id})`);
+                console.log(`   RSSI: ${device.rssi}, Connectable: ${device.isConnectable}`);
                 
+                onDeviceFound({
+                  id: device.id,
+                  name: device.name,
+                  rssi: device.rssi || -100,
+                  isConnectable: device.isConnectable !== false,
+                });
+              } else if (name.includes('watch') || name.includes('smart')) {
+                // Mostrar otros smartwatches como opción
+                console.log(`📱 Dispositivo encontrado: ${device.name}`);
                 onDeviceFound({
                   id: device.id,
                   name: device.name,
@@ -174,10 +174,9 @@ export class BLEService {
           }
         );
 
-        // Detener escaneo después de la duración especificada
         setTimeout(() => {
           manager.stopDeviceScan();
-          console.log('⏹️ Escaneo detenido');
+          console.log('⏱️ Escaneo finalizado');
           resolve();
         }, duration);
       });
@@ -188,6 +187,9 @@ export class BLEService {
     }
   }
 
+  /**
+   * Conectar al Blackview W60
+   */
   async connectToDevice(deviceId: string): Promise<void> {
     const manager = this.ensureManager();
     
@@ -196,16 +198,68 @@ export class BLEService {
         await this.disconnect();
       }
 
-      console.log('🔗 Conectando a:', deviceId);
+      console.log('🔗 Conectando a dispositivo:', deviceId);
       
       const device = await manager.connectToDevice(deviceId);
       await device.discoverAllServicesAndCharacteristics();
       
       this.connectedDevice = device;
       console.log('✅ Conectado a:', device.name);
+
+      // Intentar habilitar notificaciones automáticamente
+      await this.setupNotifications();
     } catch (error) {
       console.error('❌ Error al conectar:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Configurar notificaciones automáticas
+   */
+  private async setupNotifications(): Promise<void> {
+    if (!this.connectedDevice) return;
+
+    try {
+      // Intentar habilitar Battery Level
+      try {
+        await this.connectedDevice.monitorCharacteristicForService(
+          BLACKVIEW_W60_CONFIG.BATTERY_SERVICE,
+          BLACKVIEW_W60_CONFIG.BATTERY_LEVEL,
+          (error, char) => {
+            if (!error && char?.value) {
+              const battery = BLACKVIEW_W60_CONFIG.BATTERY_PARSER(
+                Buffer.from(char.value, 'base64').buffer
+              );
+              console.log(`📊 Nivel de batería: ${battery.level}%`);
+            }
+          }
+        );
+        console.log('✅ Battery Level notifications habilitadas');
+      } catch (e) {
+        console.warn('⚠️ No se pudo habilitar Battery Level');
+      }
+
+      // Intentar habilitar Heart Rate
+      try {
+        await this.connectedDevice.monitorCharacteristicForService(
+          BLACKVIEW_W60_CONFIG.HEART_RATE_SERVICE,
+          BLACKVIEW_W60_CONFIG.HEART_RATE_MEASUREMENT,
+          (error, char) => {
+            if (!error && char?.value) {
+              const hr = BLACKVIEW_W60_CONFIG.HEART_RATE_PARSER(
+                Buffer.from(char.value, 'base64').buffer
+              );
+              console.log(`❤️ Frecuencia cardíaca: ${hr.heartRate} bpm`);
+            }
+          }
+        );
+        console.log('✅ Heart Rate notifications habilitadas');
+      } catch (e) {
+        console.warn('⚠️ No se pudo habilitar Heart Rate');
+      }
+    } catch (error) {
+      console.warn('⚠️ Error en setupNotifications:', error);
     }
   }
 
@@ -224,6 +278,9 @@ export class BLEService {
     };
   }
 
+  /**
+   * Suscribirse al acelerómetro
+   */
   async subscribeToAccelerometer(
     callback: (data: WatchSensorPacket) => void
   ): Promise<void> {
@@ -232,18 +289,29 @@ export class BLEService {
     }
 
     try {
-      this.connectedDevice.monitorCharacteristicForService(
-        SERVICE_UUID,
-        ACCEL_CHARACTERISTIC,
+      // Intentar con servicio propietario primero
+      await this.connectedDevice.monitorCharacteristicForService(
+        BLACKVIEW_W60_CONFIG.MOTION_SERVICE,
+        BLACKVIEW_W60_CONFIG.ACCELEROMETER_CHARACTERISTIC,
         (error: any, characteristic: any) => {
           if (error) {
-            console.error('❌ Error al leer acelerómetro:', error);
+            console.warn('❌ Error al leer acelerómetro:', error);
             return;
           }
 
           if (characteristic?.value) {
-            const data = this.parseCharacteristicData(characteristic, 'accelerometer');
-            callback(data);
+            const buffer = Buffer.from(characteristic.value, 'base64').buffer;
+            const accelData = BLACKVIEW_W60_CONFIG.ACCELEROMETER_PARSER(buffer);
+            
+            const packet: WatchSensorPacket = {
+              type: 'accelerometer',
+              x: accelData.x,
+              y: accelData.y,
+              z: accelData.z,
+              timestamp: Date.now(),
+            };
+            
+            callback(packet);
           }
         }
       );
@@ -256,6 +324,9 @@ export class BLEService {
     }
   }
 
+  /**
+   * Suscribirse al giroscopio
+   */
   async subscribeToGyroscope(
     callback: (data: WatchSensorPacket) => void
   ): Promise<void> {
@@ -264,18 +335,28 @@ export class BLEService {
     }
 
     try {
-      this.connectedDevice.monitorCharacteristicForService(
-        SERVICE_UUID,
-        GYRO_CHARACTERISTIC,
+      await this.connectedDevice.monitorCharacteristicForService(
+        BLACKVIEW_W60_CONFIG.MOTION_SERVICE,
+        BLACKVIEW_W60_CONFIG.GYROSCOPE_CHARACTERISTIC,
         (error: any, characteristic: any) => {
           if (error) {
-            console.error('❌ Error al leer giroscopio:', error);
+            console.warn('❌ Error al leer giroscopio:', error);
             return;
           }
 
           if (characteristic?.value) {
-            const data = this.parseCharacteristicData(characteristic, 'gyroscope');
-            callback(data);
+            const buffer = Buffer.from(characteristic.value, 'base64').buffer;
+            const gyroData = BLACKVIEW_W60_CONFIG.GYROSCOPE_PARSER(buffer);
+            
+            const packet: WatchSensorPacket = {
+              type: 'gyroscope',
+              x: gyroData.x,
+              y: gyroData.y,
+              z: gyroData.z,
+              timestamp: Date.now(),
+            };
+            
+            callback(packet);
           }
         }
       );
@@ -288,27 +369,34 @@ export class BLEService {
     }
   }
 
-  private parseCharacteristicData(
-    characteristic: Characteristic,
-    type: 'accelerometer' | 'gyroscope'
-  ): WatchSensorPacket {
-    const value = characteristic.value;
-    if (!value) {
-      throw new Error('No hay datos en la característica');
+  /**
+   * Obtener nivel de batería
+   */
+  async getBatteryLevel(): Promise<number | null> {
+    if (!this.connectedDevice) return null;
+
+    try {
+      const characteristic = await this.connectedDevice.readCharacteristicForService(
+        BLACKVIEW_W60_CONFIG.BATTERY_SERVICE,
+        BLACKVIEW_W60_CONFIG.BATTERY_LEVEL
+      );
+
+      if (characteristic.value) {
+        const buffer = Buffer.from(characteristic.value, 'base64').buffer;
+        const battery = BLACKVIEW_W60_CONFIG.BATTERY_PARSER(buffer);
+        return battery.level;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('❌ Error al leer batería:', error);
+      return null;
     }
-
-    const buffer = Buffer.from(value, 'base64');
-    const data = new Float32Array(buffer.buffer);
-
-    return {
-      type,
-      x: data[0] || 0,
-      y: data[1] || 0,
-      z: data[2] || 0,
-      timestamp: data[3] || Date.now(),
-    };
   }
 
+  /**
+   * Desconectar
+   */
   async disconnect(): Promise<void> {
     const manager = this.ensureManager();
     
@@ -322,30 +410,6 @@ export class BLEService {
         console.error('❌ Error al desconectar:', error);
         throw error;
       }
-    }
-  }
-
-  async getBatteryLevel(): Promise<number | null> {
-    if (!this.connectedDevice) return null;
-
-    try {
-      const BATTERY_SERVICE = '0000180f-0000-1000-8000-00805f9b34fb';
-      const BATTERY_LEVEL = '00002a19-0000-1000-8000-00805f9b34fb';
-
-      const characteristic = await this.connectedDevice.readCharacteristicForService(
-        BATTERY_SERVICE,
-        BATTERY_LEVEL
-      );
-
-      if (characteristic.value) {
-        const buffer = Buffer.from(characteristic.value, 'base64');
-        return buffer[0];
-      }
-
-      return null;
-    } catch (error) {
-      console.error('⚠️ No se pudo leer batería:', error);
-      return null;
     }
   }
 
