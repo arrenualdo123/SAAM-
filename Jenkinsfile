@@ -1,7 +1,7 @@
 pipeline {
     agent any
     tools {
-        nodejs 'NodeJS 24.0.0' 
+        nodejs 'Node' 
     }
     environment {
         SONAR_TOKEN = credentials('sonar-token') 
